@@ -133,7 +133,7 @@ The codebase ships with **unit tests** across all three tiers and scaffolding fo
 |-------|-----------|--------|
 | Backend unit tests | JUnit 5, Mockito, AssertJ | Provided — some may need fixing |
 | Frontend unit tests | Vitest, Testing Library | Provided |
-| E2E tests | Playwright | Scaffolded — empty |
+| E2E tests | Playwright (see [`e2eTests/`](e2eTests/README.md)) | Framework template (POM + Allure) |
 | Contract tests | Pact | Scaffolded — empty |
 | Integration tests | Testcontainers | Scaffolded — empty |
 | Architecture tests | ArchUnit | Provided |
@@ -174,6 +174,18 @@ cd code/demo-app-ui && npm test
 ```
 
 ### Run E2E tests (requires full stack running)
+
+Preferred suite (POM + Allure): see **[e2eTests/README.md](e2eTests/README.md)**.
+
+```bash
+cd e2eTests
+cp .env.example .env
+npm install && npm run install:browsers
+npm test
+npm run report:allure
+```
+
+Legacy empty scaffold under the UI package:
 
 ```bash
 cd code/demo-app-ui && npx playwright test
