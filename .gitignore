@@ -1,0 +1,93 @@
+# Test outputs
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+blob-report/
+**/blob-report/
+
+# Allure
+allure-results/
+**/allure-results/
+allure-report/
+**/allure-report/
+
+# Analyser outputs
+outputs/
+**/outputs/
+
+# Codebase directories (cloned repos)
+codebase/
+**/codebase/
+
+# Python
+**/__pycache__/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.coverage
+.cache/
+venv/
+.venv/
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+
+# Node / frontend
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+.npm/
+.pnpm-store/
+coverage/
+**/coverage/
+*.tsbuildinfo
+.turbo/
+
+# Java / Maven
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# Secrets / local env (keep example templates if added later)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Docker / local overrides
+docker-compose.override.yml
