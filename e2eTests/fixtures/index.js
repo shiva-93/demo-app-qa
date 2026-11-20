@@ -2,9 +2,21 @@ import { test as base, expect } from '@playwright/test';
 import { LoginPage } from '../pages/login.page.js';
 import { SignupPage } from '../pages/signup.page.js';
 import { AdminDashboardPage } from '../pages/admin-dashboard.page.js';
+import { AdminClaimsPage } from '../pages/admin-claims.page.js';
 import { ClaimsPage } from '../pages/claims.page.js';
 import { env, hasAdminCredentials, hasClaimantCredentials } from '../config/env.js';
 import { attachFailureScreenshot, attachFailureVideo } from '../helpers/artifacts.js';
+
+/** Shared claim payload used when seeding a claim for admin verification. */
+export const seedClaimData = {
+  incidentDate: '01/11/2026',
+  incidentDateLabel: 'November 1, 2026',
+  listDateLabel: 'Nov 1, 2026',
+  location: '123, Main road, Hyderabad',
+  amount: '50000',
+  amountLabel: '$50,000.00',
+  description: 'Accident occured due to driver reckless driving etc',
+};
 
 /**
  * Custom Playwright fixtures: page objects + optional login helpers.
@@ -68,6 +80,11 @@ export const test = base.extend({
     await use(new AdminDashboardPage(page));
   },
 
+  /** Fresh AdminClaimsPage bound to the current browser tab. */
+  adminClaimsPage: async ({ page }, use) => {
+    await use(new AdminClaimsPage(page));
+  },
+
   /** Fresh ClaimsPage bound to the current browser tab. */
   claimsPage: async ({ page }, use) => {
     await use(new ClaimsPage(page));
@@ -85,7 +102,17 @@ export const test = base.extend({
     testInfo.skip(!hasAdminCredentials(), 'Set E2E_ADMIN_USER and E2E_ADMIN_PASSWORD');
     await loginPage.open();
     await loginPage.login(env.admin.email, env.admin.password);
-    await adminDashboardPage.expectLoaded();
+
+    const loginError = loginPage.errorMessage('Invalid email or password');
+    await Promise.race([
+      adminDashboardPage.expectLoaded(),
+      loginError.waitFor({ state: 'visible' }).then(async () => {
+        throw new Error(
+          `Admin login failed for ${env.admin.email}. Check E2E_ADMIN_USER / E2E_ADMIN_PASSWORD and that auth + API are running.`,
+        );
+      }),
+    ]);
+
     await use({ page, loginPage, adminDashboardPage });
   },
 
@@ -101,8 +128,67 @@ export const test = base.extend({
     testInfo.skip(!hasClaimantCredentials(), 'Set E2E_CLAIMANT_USER and E2E_CLAIMANT_PASSWORD');
     await loginPage.open();
     await loginPage.login(env.claimant.email, env.claimant.password);
-    await claimsPage.expectLoaded();
+
+    // Fail fast if credentials are rejected (instead of waiting 30s for /claims)
+    const loginError = loginPage.errorMessage('Invalid email or password');
+    await Promise.race([
+      claimsPage.expectLoaded(),
+      loginError.waitFor({ state: 'visible' }).then(async () => {
+        throw new Error(
+          `Claimant login failed for ${env.claimant.email}. Check E2E_CLAIMANT_USER / E2E_CLAIMANT_PASSWORD and that auth + API are running.`,
+        );
+      }),
+    ]);
+
     await use({ page, loginPage, claimsPage });
+  },
+
+  /**
+   * Ensures a claim exists, then leaves you logged in as admin on the dashboard.
+   * Flow: claimant submits a claim → logout → admin login.
+   * Use this so admin verify tests do not depend on claims.submit.spec.js order.
+   *
+   * Example:
+   *   test('admin sees submitted claim', async ({ adminWithSubmittedClaim }) => {
+   *     const { adminClaimsPage } = adminWithSubmittedClaim;
+   *     await adminClaimsPage.openFromNav();
+   *     await adminClaimsPage.expectSubmittedClaimRow();
+   *   });
+   */
+  adminWithSubmittedClaim: async (
+    { page, loginPage, claimsPage, adminDashboardPage, adminClaimsPage },
+    use,
+    testInfo,
+  ) => {
+    testInfo.skip(
+      !hasAdminCredentials() || !hasClaimantCredentials(),
+      'Set E2E_ADMIN_* and E2E_CLAIMANT_* in .env',
+    );
+
+    // 1) Claimant submits a claim (same flow as TCID-003)
+    await loginPage.open();
+    await loginPage.login(env.claimant.email, env.claimant.password);
+    const claimantLoginError = loginPage.errorMessage('Invalid email or password');
+    await Promise.race([
+      claimsPage.expectLoaded(),
+      claimantLoginError.waitFor({ state: 'visible' }).then(async () => {
+        throw new Error(`Claimant login failed for ${env.claimant.email}`);
+      }),
+    ]);
+    await claimsPage.submitNewClaim(seedClaimData);
+    await claimsPage.logout();
+
+    // 2) Admin logs in
+    await loginPage.login(env.admin.email, env.admin.password);
+    const adminLoginError = loginPage.errorMessage('Invalid email or password');
+    await Promise.race([
+      adminDashboardPage.expectLoaded(),
+      adminLoginError.waitFor({ state: 'visible' }).then(async () => {
+        throw new Error(`Admin login failed for ${env.admin.email}`);
+      }),
+    ]);
+
+    await use({ page, loginPage, adminDashboardPage, adminClaimsPage, claimsPage });
   },
 });
 

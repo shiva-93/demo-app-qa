@@ -10,6 +10,7 @@
     "clean:allure": "rimraf allure-results allure-report",
     "test": "npm run clean:allure-results && playwright test",
     "test:smoke": "npm run clean:allure-results && playwright test --grep @smoke",
+    "test:functional": "npm run clean:allure-results && playwright test --grep @functional",
     "test:headed": "npm run clean:allure-results && playwright test --headed",
     "test:ui": "npm run clean:allure-results && playwright test --ui",
     "test:auth": "npm run clean:allure-results && playwright test tests/auth",

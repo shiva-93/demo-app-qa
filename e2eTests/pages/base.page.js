@@ -1,8 +1,8 @@
-import { byRoleHeading } from '../helpers/selectors.js';
+import { byRoleHeading, byRoleButton, byTestId } from '../helpers/selectors.js';
 
 /**
  * Shared helpers that every page object inherits.
- * Example: LoginPage extends BasePage and reuses goto(), title(), errorMessage(), waitForUrl().
+ * Example: LoginPage extends BasePage and reuses goto(), title(), button(), errorMessage().
  */
 export class BasePage {
   /**
@@ -48,6 +48,28 @@ export class BasePage {
   }
 
   /**
+   * Find a button by its accessible name (getByRole('button')).
+   * Example: this.button(/submit new claim/i)
+   * Example: this.button('Next')
+   *
+   * @param {string|RegExp} name
+   * @param {import('@playwright/test').LocatorOptions & { exact?: boolean }} [options]
+   */
+  button(name, options) {
+    return byRoleButton(this.page, name, options);
+  }
+
+  /**
+   * Find an element by data-testid.
+   * Example: this.testId('wizard-step-1')
+   *
+   * @param {string} testId
+   */
+  testId(testId) {
+    return byTestId(this.page, testId);
+  }
+
+  /**
    * Find an error / validation message by its visible text (plain text on the page).
    * Pass the expected copy from the test so this method stays reusable when messages change.
    *
@@ -58,6 +80,16 @@ export class BasePage {
    */
   errorMessage(message) {
     return this.page.getByText(message);
+  }
+
+  /**
+   * Find visible text on the page (for asserting filled form values after submit).
+   * Example: this.text('123, Main road, Hyderabad')
+   *
+   * @param {string|RegExp} value
+   */
+  text(value) {
+    return this.page.getByText(value);
   }
 
   /**
@@ -72,5 +104,15 @@ export class BasePage {
       timeout: 30_000,
       ...options,
     });
+  }
+
+  /**
+   * Click Logout in the app header and wait for the login screen.
+   * Example: await this.logout();
+   */
+  async logout() {
+    await this.button(/^Logout$/i).click();
+    await this.waitForUrl(/\/login/);
+    await this.title(/log in/i).waitFor({ state: 'visible' });
   }
 }
